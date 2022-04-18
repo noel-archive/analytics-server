@@ -12,3 +12,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# Create the builder stage so we can build the server.
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS builder
+
+# TODO: build thing and install Git
+# using: https://github.com/git-for-windows/git/releases/download/v2.35.3.windows.1/PortableGit-2.35.3-64-bit.7z.exe
