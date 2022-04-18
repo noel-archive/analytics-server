@@ -1,0 +1,171 @@
+# 📊✏️ analytics-server: Enable analytical and monitoring service for self-hosted Noelware products.
+# Copyright 2022 Noelware <team@noelware.org>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Release (nightly) Workflow
+on:
+  release:
+    types:
+       - prereleased
+jobs:
+  release-linux:
+    name: Release Docker Image (linux/amd64, linux/arm64)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Get release tag
+        id: tag
+        uses: dawidd6/action-get-tag@v1
+        with:
+          strip_v: true
+
+      - name: Setup Docker buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx/cache
+          key: ${{ runner.os }}-buildx-cache-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-cache-
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Login into Docker HUb
+        with:
+          username: auguwu
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Login into GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GHCR_USERNAME }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build x86_64 image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./docker/amd64.Dockerfile
+          platforms: linux/amd64
+          push: true
+          cache-from: type=local,src=/tmp/.buildx/cache
+          cache-to: type=local,dest=/tmp/.buildx/cache
+          tags: |
+            noelware/analytics-server:latest-nightly-amd64
+            noelware/analytics-server:${{steps.tag.outputs.tag}}-nightly-amd64
+            ghcr.io/noelware/analytics-server:latest-nightly-amd64
+            ghcr.io/noelware/analytics-server:${{steps.tag.outputs.tag}}-nightly-amd64
+
+      - name: Build ARM64 image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./docker/arm64.Dockerfile
+          platforms: linux/arm64
+          push: true
+          cache-from: type=local,src=/tmp/.buildx/cache
+          cache-to: type=local,dest=/tmp/.buildx/cache
+          tags: |
+            noelware/analytics-server:latest-nightly-arm64
+            noelware/analytics-server:${{steps.tag.outputs.tag}}-nightly-arm64
+            ghcr.io/noelware/analytics-server:latest-nightly-arm64
+            ghcr.io/noelware/analytics-server:${{steps.tag.outputs.tag}}-nightly-arm64
+
+      - name: Creates and push manifests (Docker Hub, latest)
+        uses: Noelware/docker-manifest-action@master
+        with:
+          base-image: noelware/analytics-server:latest-nightly
+          extra-images: noelware/analytics-server:latest-nightly-arm64,noelware/analytics-server:latest-nightly-amd64
+          push: true
+
+      - name: Creates and push manifests (Docker Hub, v${{steps.tag.outputs.tag}})
+        uses: Noelware/docker-manifest-action@master
+        with:
+          base-image: noelware/analytics-server:${{steps.tag.outputs.tag}}-nightly
+          extra-images: noelware/analytics-server:${{steps.tag.outputs.tag}}-nightly-arm64,noelware/analytics-server:${{steps.tag.outputs.tag}}-nightly-amd64
+          push: true
+
+      - name: Creates and push manifests (GitHub Container Registry, latest)
+        uses: Noelware/docker-manifest-action@master
+        with:
+          base-image: ghcr.io/noelware/analytics-server:latest-nightly
+          extra-images: ghcr.io/noelware/analytics-server:latest-nightly-arm64,ghcr.io/noelware/analytics-server:latest-nightly-amd64
+          push: true
+
+      - name: Creates and push manifests (Docker Hub, v${{steps.tag.outputs.tag}})
+        uses: Noelware/docker-manifest-action@master
+        with:
+          base-image: ghcr.io/noelware/analytics-server:${{steps.tag.outputs.tag}}-nightly
+          extra-images: ghcr.io/noelware/analytics-server:${{steps.tag.outputs.tag}}-nightly-arm64,ghcr.io/noelware/analytics-server:${{steps.tag.outputs.tag}}-nightly-amd64
+          push: true
+
+  release-windows:
+    name: Release Docker images (Windows)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Get release tag
+        id: tag
+        uses: dawidd6/action-get-tag@v1
+        with:
+          strip_v: true
+
+      - name: Setup Docker buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx/cache
+          key: ${{ runner.os }}-buildx-cache-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-cache-
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Login into Docker HUb
+        with:
+          username: auguwu
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Login into GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GHCR_USERNAME }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./docker/windows.Dockerfile
+          platforms: windows/amd64
+          push: true
+          cache-from: type=local,src=/tmp/.buildx/cache
+          cache-to: type=local,dest=/tmp/.buildx/cache
+          tags: |
+            noelware/analytics-server:latest-windows-nightly
+            noelware/analytics-server:${{steps.tag.outputs.tag}}-windows-nightly
+            ghcr.io/noelware/analytics-server:latest-windows-nightly
+            ghcr.io/noelware/analytics-server:${{steps.tag.outputs.tag}}-windows-nightly
