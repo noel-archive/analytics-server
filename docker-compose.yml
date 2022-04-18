@@ -1,0 +1,174 @@
+# 📊✏️ analytics-server: Enable analytical and monitoring service for self-hosted Noelware products.
+# Copyright 2022 Noelware <team@noelware.org>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+version: '3.8'
+services:
+  server:
+    build:
+      context: .
+      dockerfile: ./docker/amd64.Dockerfile # Switch this to `./docker/arm64.Dockerfile` if on ARM64
+    
+    container_name: analytics_server
+    ports:
+      - '9898:9898'
+    environment:
+      - ANALYTICS_SERVER_HOST=0.0.0.0
+      - ANALYTICS_SERVER_PORT=9898
+      - ANALYTICS_SERVER_LOG_LEVEL=info
+
+  # By default, this will deploy a single-node Apache ZooKeeper instance, uncomment the next lines
+  # for a 3 node ZooKeeper cluster.
+  ch_zookeeper:
+    image: bitnami/zookeeper:3.8
+    container_name: ch_zookeeper
+    ports:
+      - '2181:2181'
+    volumes:
+      - ch_zookeeper:/bitnami/zookeeper
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+
+  # ch_zookeeper0:
+  #   image: bitnami/zookeeper:3.8
+  #   container_name: ch_zookeeper
+  #   ports:
+  #     - '2181:2181'
+  #   volumes:
+  #     - ch_zookeeper0:/bitnami
+  #   environment:
+  #     - ZOO_SERVER_ID=1
+  #     - ALLOW_ANONYMOUS_LOGIN=yes
+  #     - ZOO_SERVERS=ch_zookeeper0:2888:3888,ch_zookeeper1:2888:3888,ch_zookeeper2:2888:3888
+
+  # ch_zookeeper1:
+  #   image: bitnami/zookeeper:3.8
+  #   container_name: ch_zookeeper
+  #   ports:
+  #     - '2181:2181'
+  #   volumes:
+  #     - ch_zookeeper1:/bitnami
+  #   environment:
+  #     - ZOO_SERVER_ID=2
+  #     - ALLOW_ANONYMOUS_LOGIN=yes
+  #     - ZOO_SERVERS=ch_zookeeper0:2888:3888,ch_zookeeper1:2888:3888,ch_zookeeper2:2888:3888
+
+  # ch_zookeeper2:
+  #   image: bitnami/zookeeper:3.8
+  #   container_name: ch_zookeeper
+  #   ports:
+  #     - '2181:2181'
+  #   volumes:
+  #     - ch_zookeeper2:/bitnami
+  #   environment:
+  #     - ZOO_SERVER_ID=3
+  #     - ALLOW_ANONYMOUS_LOGIN=yes
+  #     - ZOO_SERVERS=ch_zookeeper0:2888:3888,ch_zookeeper1:2888:3888,ch_zookeeper2:2888:3888
+
+  # This sets up a single-node ClickHouse cluster. For a multiple-node cluster,
+  # uncomment the bottom after this after and comment this portion out.
+  clickhouse:
+    image: yandex/clickhouse-server:21.3.20.1
+    container_name: clickhouse
+    ports:
+      - 9000:9000
+    depends_on:
+      - ch_zookeeper
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    volumes:
+      - ./compose/clickhouse/config.xml:/etc/clickhouse-server/config.xml
+      - ./compose/clickhouse/metrika.xml:/etc/clickhouse-server/metrika.xml
+      - ./compose/clickhouse/users.xml:/etc/clickhouse-server/users.xml
+      - clickhouse_data:/var/lib/clickhouse
+
+  # This is for a multiple node ClickHouse cluster. This is commented out to not
+  # allocate too many resources.
+  # clickhouse0:
+  #   image: yandex/clickhouse-server:21.3.20.1
+  #   container_name: clickhouse
+  #   ports:
+  #     - 9000:9000
+  #   depends_on:
+  #     - ch_zookeeper
+  #   ulimits:
+  #     nofile:
+  #       soft: 262144
+  #       hard: 262144
+  #   volumes:
+  #     - ./compose/clickhouse/clustered/config.xml:/etc/clickhouse-server/config.xml
+  #     - ./compose/clickhouse/clustered/metrika.xml:/etc/clickhouse-server/metrika.xml
+  #     - ./compose/clickhouse/clustered/users.xml:/etc/clickhouse-server/users.xml
+  #     - clickhouse_data0:/var/lib/clickhouse
+
+  # clickhouse1:
+  #   image: yandex/clickhouse-server:21.3.20.1
+  #   container_name: clickhouse
+  #   ports:
+  #     - 9000:9000
+  #   depends_on:
+  #     - ch_zookeeper
+  #   ulimits:
+  #     nofile:
+  #       soft: 262144
+  #       hard: 262144
+  #   volumes:
+  #     - ./compose/clickhouse/clustered/config.xml:/etc/clickhouse-server/config.xml
+  #     - ./compose/clickhouse/clustered/metrika.xml:/etc/clickhouse-server/metrika.xml
+  #     - ./compose/clickhouse/clustered/users.xml:/etc/clickhouse-server/users.xml
+  #     - clickhouse_data1:/var/lib/clickhouse
+
+  # clickhouse2:
+  #   image: yandex/clickhouse-server:21.3.20.1
+  #   container_name: clickhouse
+  #   ports:
+  #     - 9000:9000
+  #   depends_on:
+  #     - ch_zookeeper
+  #   ulimits:
+  #     nofile:
+  #       soft: 262144
+  #       hard: 262144
+  #   volumes:
+  #     - ./compose/clickhouse/clustered/config.xml:/etc/clickhouse-server/config.xml
+  #     - ./compose/clickhouse/clustered/metrika.xml:/etc/clickhouse-server/metrika.xml
+  #     - ./compose/clickhouse/clustered/users.xml:/etc/clickhouse-server/users.xml
+  #     - clickhouse_data2:/var/lib/clickhouse
+
+volumes:
+  ch_zookeeper:
+    driver: local
+
+  # ch_zookeeper0:
+  #   driver: local
+
+  # ch_zookeeper1:
+  #   driver: local
+
+  # ch_zookeeper2:
+  #   driver: local
+
+  clickhouse:
+    driver: local
+
+  # clickhouse0:
+  #   driver: local
+
+  # clickhouse1:
+  #   driver: local
+
+  # clickhouse2:
+  #   driver: local

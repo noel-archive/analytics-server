@@ -21,12 +21,11 @@ WORKDIR /build/analytics/server
 
 # Copy csproj and restore as distinct layers
 COPY *.sln .
-COPY src/Noelware.Analytics.Server ./server/
+COPY src/Noelware.Analytics.Server/Noelware.Analytics.Server.csproj ./src/Noelware.Analytics.Server/Noelware.Analytics.Server.csproj
 RUN dotnet restore -r linux-musl-x64
 
 # Copy everything else and build the application
-COPY src/Noelware.Analytics.Server ./server/
-WORKDIR /build/analytics/server/server
+COPY src/Noelware.Analytics.Server ./src/Noelware.Analytics.Server
 RUN dotnet publish -c Release -o /app -r linux-musl-x64 --self-contained false --no-restore
 
 # Final stage: the runtime image!
@@ -43,7 +42,7 @@ WORKDIR /app/noelware/analytics/server
 COPY --from=builder /app .
 
 # Copy the Docker scripts into this image.
-COPY docker /app/noelware/analytics/server/scripts
+COPY ./docker/scripts /app/noelware/analytics/server/scripts
 
 # Enable globalization APIs (for no reason, just for fun >:3)
 # English (British) > English AU / US, fight me.

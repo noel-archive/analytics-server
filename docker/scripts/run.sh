@@ -14,3 +14,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+. /app/noelware/analytics/server/scripts/liblog.sh
+
+info "*** starting analytics server... ***"
+dotnet Noelware.Analytics.Server.dll
