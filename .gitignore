@@ -799,3 +799,5 @@ fabric.properties
 
 ### VisualStudio Patch ###
 # Additional files built by Visual Studio
+
+src/Noelware.Analytics.Server/config.yml
