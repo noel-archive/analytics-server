@@ -1,0 +1,4 @@
+# This contains the version metadata for Noelware Analytics. This is applied at compile time
+# in the server and agent binaries.
+
+0.1-nightly
