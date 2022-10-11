@@ -64,8 +64,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features
 
-      - name: rustfmt
-        uses: mbrobbel/rustfmt-check@master
-        if: ${{ !contains(github.event.head_commit.message, 'using rustfmt') }}
-        with:
-          token: ${{ secrets.NOEL_TOKEN }}
+      # - name: rustfmt
+      #   uses: mbrobbel/rustfmt-check@master
+      #   if: ${{ !contains(github.event.head_commit.message, 'using rustfmt') }}
+      #   with:
+      #     token: ${{ secrets.NOEL_TOKEN }}
