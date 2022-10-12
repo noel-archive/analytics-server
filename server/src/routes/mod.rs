@@ -13,23 +13,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(backtrace_frames)]
-
-/// Returns the current version of the Analytics server.
-pub const VERSION: &str = env!("ANALYTICS_SERVER_VERSION");
-
-/// Returns the current build date of the server.
-pub const BUILD_DATE: &str = env!("ANALYTICS_SERVER_BUILD_DATE");
-
-pub const COMMIT_HASH: &str = env!("ANALYTICS_SERVER_COMMIT_HASH");
-
-#[macro_use]
-extern crate log;
-
-pub mod config;
-pub mod errors;
-pub mod macros;
-pub mod models;
-pub mod routes;
-pub mod server;
-pub mod setup_utils;
+pub mod main;

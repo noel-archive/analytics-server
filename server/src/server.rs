@@ -15,10 +15,18 @@
 
 use std::net::SocketAddr;
 
-use actix_web::{middleware::Logger, web::Data, App, HttpServer};
+use actix_web::{
+    self,
+    middleware::Logger,
+    web::{self, Data},
+    App, HttpServer,
+};
 use anyhow::Result;
 
-use crate::config::{Config, ServerConfig};
+use crate::{
+    config::{Config, ServerConfig},
+    routes,
+};
 
 #[derive(Debug, Clone)]
 pub struct Server {
@@ -67,6 +75,9 @@ impl Server {
             App::new()
                 .app_data(Data::new(self.clone()))
                 .wrap(Logger::new("%r ~> %s [%b bytes; %D ms]").log_target("actix::request"))
+                .route("/", web::get().to(routes::main::index))
+                .route("/info", web::get().to(routes::main::info))
+                .route("/heartbeat", web::get().to(routes::main::heartbeat))
         })
         .bind(addr)?
         .run()
