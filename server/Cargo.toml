@@ -21,7 +21,7 @@ version = "0.0.0-dev.0"
 edition = "2021"
 
 [dependencies]
-actix-utils = "3.0.0"
+actix-utils = "3.0.1"
 actix-web = "4.2.1"
 ansi_term = "0.12.1"
 anyhow = "1.0.66"
