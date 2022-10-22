@@ -24,7 +24,7 @@ on:
       - master
 
     paths-ignore:
-      - '.github/**'
+      #- '.github/**'
       - 'docker/**'
       - 'scripts/**'
       - '.dockerignore'
@@ -35,6 +35,20 @@ jobs:
   lint:
     name: Lint CI
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: analytics
+          POSTGRES_PASSWORD: analytics
+          POSTGRES_DATABASE: analytics
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - '5432:5432'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -52,6 +66,12 @@ jobs:
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
+
+      - name: Generate Prisma client
+        working-directory: ./server
+        run: cargo prisma generate
+        env:
+          DATABASE_URL: "postgresql://analytics:analytics@localhost:5432/analytics?schema=noelware&sslmode=disable"
 
       - name: Check for compile errors
         uses: actions-rs/cargo@v1
