@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let version = String::from_utf8(read("../.stackversion")?)?
         .split('\n')
-        .filter(|f| !f.starts_with('#') && !f.is_empty())
+        .filter(|f| !f.starts_with('#'))
         .collect::<Vec<_>>()
         .first()
         .expect("Missing version for Noelware Analytics in ../.stackversion!")

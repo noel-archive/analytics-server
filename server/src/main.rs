@@ -19,14 +19,13 @@
 extern crate log;
 
 use analytics_server::{config::Config, server::Server, setup_utils, COMMIT_HASH, VERSION};
+
 use anyhow::Result;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // setup ctrl+c action
-
-    // setup panic handler
-    setup_utils::setup_panic_hook();
+    // load dotenv just in case people need it
+    dotenv::dotenv()?;
 
     // load config
     match std::env::var("ANALYTICS_SERVER_CONFIG_FILE") {
@@ -45,12 +44,12 @@ async fn main() -> Result<()> {
     setup_utils::setup_sentry(config)?;
 
     info!(
-        "~*~ running Noelware Analytics v{} ({}) ~*~",
+        "~*~ running Noelware Analytics {} ({}) ~*~",
         VERSION, COMMIT_HASH
     );
 
     // start server
-    let server = Server::default();
+    let server = Server::new().await?;
     server.launch().await?;
 
     Ok(())

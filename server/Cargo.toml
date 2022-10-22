@@ -23,11 +23,14 @@ edition = "2021"
 [dependencies]
 actix-utils = "3.0.0"
 actix-web = "4.2.1"
+actix-web-static-files = "4.0.0"
+analytics-protobufs = { path = "../protos" }
 ansi_term = "0.12.1"
 anyhow = "1.0.65"
 async-trait = "0.1.57"
 chrono = { version = "0.4.22", features = ["serde"] }
 clickhouse-rs = "1.0.0-alpha.1"
+dotenv = "0.15.0"
 fern = "0.6.1"
 futures = { version = "0.3.24", default-features = false, features = ["std"] }
 futures-util = "0.3.24"
@@ -40,10 +43,16 @@ sentry-tracing = "0.27.0"
 serde = { version = "1.0.145", features = ["derive"] }
 serde_json = "1.0.86"
 serde_yaml = "0.9.13"
+static-files = "0.2.3"
 sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono"] }
 thiserror = "1.0.37"
 tokio = { version = "1.21.2", features = ["full"] }
-analytics-protobufs = { path = "../protos" }
+
+[dependencies.prisma-client-rust]
+git = "https://github.com/Brendonovich/prisma-client-rust"
+tag = "0.6.2"
+default-features = false
+features = ["postgresql"]
 
 [build-dependencies]
 chrono = "0.4.22"

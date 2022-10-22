@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::net::SocketAddr;
+use std::{net::SocketAddr, sync::Arc};
 
 use actix_web::{
     self,
@@ -24,36 +24,45 @@ use actix_web::{
 use anyhow::Result;
 
 use crate::{
-    config::{Config, ServerConfig},
-    routes,
+    clickhouse::client::ClickHouse,
+    config::Config,
+    prisma::{new_client, PrismaClient},
+    routes, setup_utils,
 };
 
 #[derive(Debug, Clone)]
 pub struct Server {
+    clickhouse: Arc<ClickHouse>,
+    prisma: Arc<PrismaClient>,
     config: &'static Config,
 }
 
-impl Default for Server {
-    fn default() -> Self {
-        Server::new()
-    }
-}
-
 impl Server {
-    pub fn new() -> Server {
+    pub async fn new() -> Result<Server> {
         let config = Config::get().unwrap();
-        Server { config }
+        let clickhouse = ClickHouse::new(config.clickhouse.clone().unwrap_or_default())?;
+
+        info!("connecting to postgres!");
+        let prisma = new_client().await?;
+
+        info!("connected to postgres, now connecting to clickhouse!");
+        clickhouse.ping().await?;
+
+        Ok(Server {
+            clickhouse: Arc::new(clickhouse.clone()),
+            prisma: Arc::new(prisma),
+            config,
+        })
     }
 
     pub async fn launch(self) -> Result<()> {
-        info!("launching server...");
+        info!("testing clickhouse availibility...");
+        let clickhouse = self.clickhouse.clone();
+        clickhouse.ping().await?;
 
+        info!("clickhouse seems stable! now launching server...");
         let config = self.config.clone();
-        let server_cfg = config.server.unwrap_or(ServerConfig {
-            log_requests: Some(true),
-            host: Some("0.0.0.0".into()),
-            port: Some(9292),
-        });
+        let server_cfg = config.server.unwrap_or_default();
 
         let addr = match &server_cfg.host {
             Some(host) => {
@@ -69,6 +78,10 @@ impl Server {
                     .expect("unable to parse host:port to SocketAddr")
             }
         };
+
+        // setup panic handler
+        info!("installing panic hook");
+        setup_utils::setup_panic_hook();
 
         info!("launching server on {addr}!");
         HttpServer::new(move || {

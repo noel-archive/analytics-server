@@ -13,5 +13,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod api;
-pub mod main;
+use std::io::Write;
+
+/// Represents a writer that doesn't do anything.
+#[derive(Debug, Default)]
+pub struct NullWriter;
+
+impl Write for NullWriter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+unsafe impl Send for NullWriter {}

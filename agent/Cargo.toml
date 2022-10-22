@@ -20,6 +20,9 @@ homepage = "https://analytics.noelware.org"
 version = "0.0.0-dev.0"
 edition = "2021"
 
+[build-dependencies]
+chrono = "0.4.22"
+
 [[bin]]
 name = "analytics-agent"
 path = "src/main.rs"

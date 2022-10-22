@@ -13,5 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod api;
-pub mod main;
+fn main() {
+    prisma_client_rust_cli::run();
+}

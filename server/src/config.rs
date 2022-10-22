@@ -73,6 +73,41 @@ pub struct ServerConfig {
     pub host: Option<String>,
 }
 
+impl Default for ClickHouseConfig {
+    fn default() -> Self {
+        ClickHouseConfig {
+            min_connections_in_pool: Some(10),
+            max_connections_in_pool: Some(50),
+            use_lz4_compression: Some(false),
+            database: Some("analytics".into()),
+            username: None,
+            password: None,
+            host: Some("127.0.0.1".into()),
+            port: Some(9000),
+        }
+    }
+}
+
+impl Default for LogConfig {
+    fn default() -> Self {
+        LogConfig {
+            logstash_url: None,
+            level: Some("info".into()),
+            json: Some(false),
+        }
+    }
+}
+
+impl Default for ServerConfig {
+    fn default() -> Self {
+        ServerConfig {
+            log_requests: Some(true),
+            port: Some(9292),
+            host: Some("0.0.0.0".into()),
+        }
+    }
+}
+
 impl ToString for ClickHouseConfig {
     #[allow(unused_assignments)]
     fn to_string(&self) -> String {

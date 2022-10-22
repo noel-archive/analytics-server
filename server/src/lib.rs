@@ -21,15 +21,20 @@ pub const VERSION: &str = env!("ANALYTICS_SERVER_VERSION");
 /// Returns the current build date of the server.
 pub const BUILD_DATE: &str = env!("ANALYTICS_SERVER_BUILD_DATE");
 
+/// Returns the commit hash of the Git repository of Noelware Analytics.
 pub const COMMIT_HASH: &str = env!("ANALYTICS_SERVER_COMMIT_HASH");
 
 #[macro_use]
 extern crate log;
 
+pub mod clickhouse;
 pub mod config;
 pub mod errors;
 pub mod macros;
+pub mod middleware;
 pub mod models;
+pub mod null_writer;
+pub mod prisma;
 pub mod routes;
 pub mod server;
 pub mod setup_utils;

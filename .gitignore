@@ -525,5 +525,13 @@ FodyWeavers.xsd
 
 # End of https://www.toptal.com/developers/gitignore/api/Rust,VisualStudio,VisualStudioCode,JetBrains+All
 
+# src/prisma.rs contains generated code that probably shouldn't be accessible.
+server/src/prisma.rs
+
+# ignore config files from server and agent
 server/config.yml
 agent/config.yml
+
+# ignore dotenv files from server and agent
+server/.env
+agent/.env

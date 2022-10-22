@@ -13,5 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod api;
-pub mod main;
+/// Represents a dashboard's content.
+#[derive(Debug, Clone)]
+pub struct Dashboard;

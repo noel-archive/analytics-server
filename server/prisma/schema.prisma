@@ -1,0 +1,94 @@
+// 🐻‍❄️🐾 Noelware Analytics: Platform to build upon metrics ingested from any source, from your HTTP server to system-level metrics
+// Copyright 2022 Noelware <team@noelware.org>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+generator client {
+    provider = "cargo prisma"
+    output   = "../src/prisma.rs"
+}
+
+/// Represents a user stored in the database. It uses a local database system for user authentication,
+/// but the official instance will have it configured to use an Noelware Account to access.
+model User {
+    /// The user's display name
+    displayName String @map("display_name")
+
+    /// The instances that this owner owns
+    instances Instance[]
+
+    /// The instance ID.
+    id BigInt @id
+
+    @@map("users")
+}
+
+/// Represents a instance that has dashboards and such. Since the service token is stored as a hash,
+/// we will need to give a user a hash key that isn't stored here (for obvious reasons), and it can be
+/// regenerated.
+model Instance {
+    /// The gRPC endpoint to reach. I don't really know if we can mask this or not, so we can decode it but
+    /// not have others encode it.
+    grpcEndpoint String @map("grpc_endpoint")
+
+    /// The service token that is stored as a hash (SHA512), so the library has to decode the service token,
+    /// which is a mapping of "{instance ID}:{token itself}"
+    serviceToken String @map("service_token")
+
+    /// The display name for the instance.
+    displayName String @map("display_name")
+
+    /// The dashboards that the instance has. It can be used as /instances/{id}/dashboards/{dashId}
+    dashboards Dashboard[]
+
+    /// The owner ID
+    ownerId BigInt @map("owner_id")
+
+    /// The owner itself.
+    owner User @relation(fields: [ownerId], references: [id])
+
+    /// The icon, as a URL or a base64 encoded URL.
+    icon String?
+
+    /// The instance ID, stored as a Snowflake.
+    id BigInt @id
+
+    @@map("instances")
+}
+
+/// Represents a dashboard model for the specific instance, mapped from instances -> dashboard id. The data is going
+/// to be a JSON blob since we can't correctly give it type definitions in Prisma, it shouldn't go over ~175MB.
+model Dashboard {
+    /// The display name of the dashboard.
+    displayName String @map("display_name")
+
+    /// The instance's ID that this dashboard belongs towards
+    instanceId BigInt @map("instance_id")
+
+    /// Instance model itself.
+    instance Instance? @relation(fields: [instanceId], references: [id])
+
+    /// Model data that is passed down to the web client. You can access it from
+    /// GET /api/instances/{uuid}/dashboards/{id}/dashboard.json
+    data Json
+
+    /// The dashboard ID
+    id BigInt @id
+
+    @@map("dashboards")
+}

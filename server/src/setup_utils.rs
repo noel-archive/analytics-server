@@ -25,15 +25,11 @@ use anyhow::Result;
 use chrono::Local;
 use fern::Dispatch;
 use log::{LevelFilter, Log};
-use regex::Regex;
 use sentry::{init, types::Dsn, ClientOptions};
 use sentry_log::{NoopLogger, SentryLogger};
 use serde_json::json;
 
-use crate::config::{Config, LogConfig};
-
-#[allow(dead_code)]
-const ANSI_TERM_REGEX: &str = r#"\u001b\[.*?m"#;
+use crate::{config::Config, null_writer::NullWriter};
 
 pub fn setup_sentry(config: &Config) -> Result<()> {
     if let Some(dsn) = &config.sentry_dsn {
@@ -49,25 +45,20 @@ pub fn setup_sentry(config: &Config) -> Result<()> {
 
 pub fn setup_logging(config: &Config) -> Result<()> {
     let config = config.clone();
-    let logging = &config.logging.unwrap_or(LogConfig {
-        logstash_url: None,
-        level: Some("info".into()),
-        json: Some(false),
-    });
-
+    let logging = &config.logging.unwrap_or_default();
     let info: &String = &"info".into();
     let level = logging.level.as_ref().unwrap_or(info);
     let log_filter = match level.as_str() {
-        "off" => log::LevelFilter::Off,
-        "error" => log::LevelFilter::Error,
-        "warn" => log::LevelFilter::Warn,
-        "info" => log::LevelFilter::Info,
-        "debug" => log::LevelFilter::Debug,
-        "trace" => log::LevelFilter::Trace,
-        _ => log::LevelFilter::Info,
+        "off" => LevelFilter::Off,
+        "error" => LevelFilter::Error,
+        "warn" => LevelFilter::Warn,
+        "info" => LevelFilter::Info,
+        "debug" => LevelFilter::Debug,
+        "trace" => LevelFilter::Trace,
+        _ => LevelFilter::Info,
     };
 
-    let dispatch = Dispatch::new()
+    let console_dispatch = Dispatch::new()
         .format(move |out, message, record| {
             let thread = std::thread::current();
             let name = thread.name().unwrap_or("main");
@@ -108,74 +99,62 @@ pub fn setup_logging(config: &Config) -> Result<()> {
                 let pid_colour = RGB(169, 147, 227).paint(pid.to_string());
 
                 out.finish(format_args!(
-                    "{time} {level} {b1}{target} {c1}{thread_name}{c2} {p1}{pid_colour}{p2}{b2} :: {}",
-                    message
-                ));
+                "{time} {level} {b1}{target} {c1}{thread_name}{c2} {p1}{pid_colour}{p2}{b2} :: {}",
+                message
+            ));
             }
         })
         .level(log_filter)
         .chain(std::io::stdout())
-        .chain(if config.sentry_dsn.is_some() {
-            Box::new(SentryLogger::new())
-        } else {
-            Box::new(NoopLogger) as Box<dyn Log>
-        }).chain(if logging.logstash_url.is_some() {
-            let host = logging
+        .into_shared();
+
+    let logstash_dispatch = Dispatch::new()
+        .format(move |out, message, record| {
+            let pid = std::process::id();
+            let thread = std::thread::current();
+            let thread_name = thread.name().unwrap_or("main");
+
+            out.finish(format_args!(
+                "{}",
+                json!({
+                    "@timestamp": Local::now().to_rfc3339(),
+                    "@version": "1",
+                    "message": format_args!("{}", message),
+                    "log.level": record.level().as_str(),
+                    "thread.name": thread_name,
+                    "process.id": pid,
+                    "metadata.file.path": record.file().unwrap_or("unknown.rs"),
+                    "metadata.file.line": record.line().unwrap_or(0)
+                })
+            ));
+        })
+        .level(log_filter)
+        .chain(if logging.logstash_url.is_some() {
+            let logstash_host = logging
                 .logstash_url
                 .as_ref()
                 .unwrap()
                 .parse::<SocketAddr>()
                 .expect("Unable to parse Logstash endpoint to SocketAddr!");
 
-            setup_logstash(host, log_filter)
+            Box::new(TcpStream::connect(logstash_host).expect("Unable to connect to Logstash"))
+                as Box<dyn Write + Send>
         } else {
-            Dispatch::new().level(LevelFilter::Off)
+            Box::new(NullWriter) as Box<dyn Write + Send>
+        })
+        .into_shared();
+
+    let dispatch = Dispatch::new()
+        .chain(console_dispatch)
+        .chain(logstash_dispatch)
+        .chain(if config.sentry_dsn.is_some() {
+            Box::new(SentryLogger::new())
+        } else {
+            Box::new(NoopLogger) as Box<dyn Log>
         });
 
     dispatch.apply()?;
     Ok(())
-}
-
-fn setup_logstash(url: SocketAddr, level: LevelFilter) -> Dispatch {
-    let stream = TcpStream::connect(url).expect("Unable to connect to TCP stream!");
-
-    Dispatch::new()
-        .format(move |out, message, record| {
-            let pid = std::process::id();
-            let thread = std::thread::current();
-            let thread_name = thread.name().unwrap_or("main");
-            let regex = Regex::new(ANSI_TERM_REGEX).unwrap();
-            let msg = regex
-                .replace_all(format_args!("{}", message).to_string().as_str(), "")
-                .to_string();
-
-            let inner_message_regex = Regex::new(r#"\[(\w.+)\] :: "#).unwrap();
-            let raw_message = inner_message_regex
-                .replace_all(msg.as_str(), "")
-                .to_string();
-
-            let data = json!({
-                "@timestamp": Local::now().to_rfc3339(),
-                "@version": "1",
-                "message": raw_message,
-                "log": json!({
-                    "level": record.level().as_str()
-                }),
-                "metadata": json!({
-                    "module": record.target(),
-                    "thread": thread_name,
-                    "pid": pid
-                }),
-                "file": json!({
-                    "path": record.file(),
-                    "line": record.line()
-                })
-            });
-
-            out.finish(format_args!("{}", data));
-        })
-        .level(level)
-        .chain(Box::new(stream) as Box<dyn Write + Send>)
 }
 
 pub fn setup_panic_hook() {
