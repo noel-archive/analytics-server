@@ -86,6 +86,9 @@ impl Server {
         info!("launching server on {addr}!");
         HttpServer::new(move || {
             App::new()
+                .wrap_fn(|request, x| {
+
+                })
                 .app_data(Data::new(self.clone()))
                 .wrap(Logger::new("%r ~> %s [%b bytes; %D ms]").log_target("actix::request"))
                 .route("/", web::get().to(routes::main::index))

@@ -69,7 +69,7 @@ pub struct ServerConfig {
     /// The port the server should bind to. Default is `9292`.
     pub port: Option<i16>,
 
-    /// The host the server should bind to. Default is `0.0.0.0` or `::1`.
+    /// The host the server should bind to. Default is `0.0.0.0` or `::`.
     pub host: Option<String>,
 }
 

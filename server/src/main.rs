@@ -17,7 +17,9 @@
 
 #[macro_use]
 extern crate log;
+extern crate core;
 
+use std::process::exit;
 use analytics_server::{config::Config, server::Server, setup_utils, COMMIT_HASH, VERSION};
 
 use anyhow::Result;
@@ -25,17 +27,14 @@ use anyhow::Result;
 #[tokio::main]
 async fn main() -> Result<()> {
     // load dotenv just in case people need it
-    dotenv::dotenv()?;
-
-    // load config
+    dotenv::dotenv().unwrap_or_default();
     match std::env::var("ANALYTICS_SERVER_CONFIG_FILE") {
-        Ok(path) => {
-            Config::load(Some(path))?;
-        }
+        Ok(path) => Config::load(Some(path))?,
+        Err(_) => panic!("Please define ANALYTICS_SERVER_CONFIG_FILE in your environmental variables!")
+    }
 
-        Err(_) => {
-            Config::load::<String>(None)?;
-        }
+    if std::env::var("DATABASE_URL").is_err() {
+        panic!("Please define DATABASE_URL in your environmental variables!");
     }
 
     // setup logging and sentry

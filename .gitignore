@@ -529,7 +529,7 @@ FodyWeavers.xsd
 server/src/prisma.rs
 
 # ignore config files from server and agent
-server/config.yml
+config.yml
 agent/config.yml
 
 # ignore dotenv files from server and agent
