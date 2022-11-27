@@ -62,7 +62,7 @@ impl Server {
         info!("clickhouse seems stable! now launching server...");
         let config = self.config.clone();
         let server_cfg = config.server.unwrap_or_default();
-        let grpc_client = analytics_client::AnalyticsClient::connect(format!("grpc://{}:{}", server_cfg.host, server_cfg.port)).await.unwrap();
+        let grpc_client = analytics_client::AnalyticsClient::connect(format!("grpc://{:?}:{:?}", server_cfg.host, server_cfg.port)).await.unwrap();
 
         let port = server_cfg.port.unwrap_or(9292);
         let addr = match &server_cfg.host {

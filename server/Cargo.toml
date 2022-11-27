@@ -48,7 +48,7 @@ tokio = { version = "1.21.2", features = ["full"] }
 
 [dependencies.redis]
 version = "0.22.1"
-features = ["connection-manager"]
+features = ["connection-manager", "async-std-comp"]
 
 [dependencies.prisma-client-rust]
 git = "https://github.com/Brendonovich/prisma-client-rust"
