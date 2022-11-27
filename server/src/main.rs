@@ -23,9 +23,10 @@ use std::process::exit;
 use analytics_server::{config::Config, server::Server, setup_utils, COMMIT_HASH, VERSION};
 
 use anyhow::Result;
+use rocket::{Error, Ignite, Rocket};
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> std::result::Result<Rocket<Ignite>, Error> {
     // load dotenv just in case people need it
     dotenv::dotenv().unwrap_or_default();
     match std::env::var("ANALYTICS_SERVER_CONFIG_FILE") {
@@ -49,7 +50,5 @@ async fn main() -> Result<()> {
 
     // start server
     let server = Server::new().await?;
-    server.launch().await?;
-
-    Ok(())
+    server.launch().await
 }

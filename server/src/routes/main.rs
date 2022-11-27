@@ -13,19 +13,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use actix_web::{HttpResponse, Responder};
+use rocket::get;
+use rocket::serde::json::Json;
 use serde::Serialize;
+use analytics_protobufs::analytics_client;
 
 use crate::{models::response::new_response, BUILD_DATE, COMMIT_HASH, VERSION};
+use crate::models::response::ApiResponse;
 
 #[derive(Debug, Serialize)]
-struct MainResponse {
+pub struct MainResponse {
     message: String,
     docs_url: String,
 }
 
 #[derive(Debug, Serialize)]
-struct InfoResponse {
+pub struct InfoResponse {
     version: String,
     commit_hash: String,
     build_date: String,
@@ -33,19 +36,22 @@ struct InfoResponse {
     product: String,
 }
 
-pub async fn index() -> impl Responder {
-    HttpResponse::Ok().json(new_response(MainResponse {
+#[get("/")]
+pub async fn index() -> Json<ApiResponse<MainResponse>> {
+    Json(new_response(MainResponse {
         message: "Hello, world!".into(),
         docs_url: "https://analytics.noelware.org/docs/server".into(),
     }))
 }
 
+#[get("/heartbeat")]
 pub async fn heartbeat() -> &'static str {
     "OK"
 }
 
-pub async fn info() -> impl Responder {
-    HttpResponse::Ok().json(new_response(InfoResponse {
+#[get("/info")]
+pub async fn info() -> Json<ApiResponse<InfoResponse>> {
+    Json(new_response(InfoResponse {
         version: VERSION.into(),
         commit_hash: COMMIT_HASH.into(),
         build_date: BUILD_DATE.into(),
