@@ -28,6 +28,7 @@ use crate::{
     setup_utils,
     routes::main,
 };
+use crate::sentinel::SentinelManager;
 
 #[derive(Debug, Clone)]
 pub struct Server {
@@ -62,14 +63,16 @@ impl Server {
         info!("clickhouse seems stable! now launching server...");
         let config = self.config.clone();
         let server_cfg = config.server.unwrap_or_default();
-        let grpc_client = analytics_client::AnalyticsClient::connect(format!("grpc://{:?}:{:?}", server_cfg.host, server_cfg.port)).await.unwrap();
+        //let grpc_client = analytics_client::AnalyticsClient::connect(format!("grpc://{:?}:{:?}", server_cfg.host, server_cfg.port)).await.unwrap();
 
-        let port = server_cfg.port.unwrap_or(9292);
         let addr = match &server_cfg.host {
             Some(host) => IpAddr::from_str(host.as_str()).expect("Invalid host address specified!"),
             None => IpAddr::from(Ipv4Addr::new(0, 0, 0, 0)),
         };
         let port: u16 = server_cfg.port.and_then(|x| Some(x as u16)).unwrap_or(9292);
+
+        let mut sentinel_manager = SentinelManager::new(self.config.clone());
+        sentinel_manager.setup().await;
 
         // setup panic handler
         info!("installing panic hook");
@@ -85,6 +88,7 @@ impl Server {
             .manage(self.clickhouse.clone())
             .manage(self.prisma.clone())
             .manage(self.config.clone())
+            .manage(sentinel_manager.clone())
             .mount("/", routes![main::index, main::heartbeat, main::info])
             .launch()
             .await
