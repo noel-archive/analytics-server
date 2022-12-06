@@ -19,7 +19,7 @@ use std::str::FromStr;
 
 use anyhow::Result;
 use rocket::{Error, Ignite, Rocket, routes};
-use analytics_protobufs::analytics_client;
+use tokio::sync::Mutex;
 
 use crate::{
     clickhouse::client::ClickHouse,
@@ -27,7 +27,9 @@ use crate::{
     prisma::{new_client, PrismaClient},
     setup_utils,
     routes::main,
+    routes::instances,
 };
+use crate::endpoints::endpoint_manager::EndpointManager;
 use crate::sentinel::SentinelManager;
 
 #[derive(Debug, Clone)]
@@ -71,8 +73,9 @@ impl Server {
         };
         let port: u16 = server_cfg.port.and_then(|x| Some(x as u16)).unwrap_or(9292);
 
-        let mut sentinel_manager = SentinelManager::new(self.config.clone());
-        sentinel_manager.setup().await;
+        let sentinel_manager = Arc::new(Mutex::new(SentinelManager::new(self.config.clone())));
+        sentinel_manager.lock().await.setup().await;
+        let endpoint_manager = Arc::new(Mutex::new(EndpointManager::new(sentinel_manager.clone())));
 
         // setup panic handler
         info!("installing panic hook");
@@ -88,8 +91,10 @@ impl Server {
             .manage(self.clickhouse.clone())
             .manage(self.prisma.clone())
             .manage(self.config.clone())
-            .manage(sentinel_manager.clone())
+            .manage(sentinel_manager)
+            .manage(endpoint_manager)
             .mount("/", routes![main::index, main::heartbeat, main::info])
+            .mount("/instances", routes![instances::instance_init])
             .launch()
             .await
     }

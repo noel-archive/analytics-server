@@ -36,7 +36,7 @@ where
 /// and why it failed.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ApiError {
-    code: String,
+    code: i32,
     message: String,
 }
 
@@ -57,15 +57,16 @@ where
 }
 
 /// Returns a new [`ApiResponse`] struct for a failed REST request.
-pub fn new_err_resp<S>(code: S, message: S) -> ApiResponse<Empty>
+pub fn new_err_resp<R, S>(code: i32, message: S) -> ApiResponse<R>
 where
+    R: Serialize + Debug,
     S: Into<String>,
 {
     ApiResponse {
         success: false,
         data: None,
         errors: Some(vec![ApiError {
-            code: code.into(),
+            code,
             message: message.into(),
         }]),
     }

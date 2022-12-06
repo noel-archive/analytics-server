@@ -1,11 +1,15 @@
 
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
+    use std::net::SocketAddr;
+    use std::sync::Arc;
     use tokio_test::block_on;
     use dotenv::var;
-    use tokio::time::sleep;
+    use tokio::sync::Mutex;
     use crate::config::Config;
+    use crate::endpoints::endpoint::Endpoint;
+    use crate::endpoints::endpoint_manager::EndpointManager;
+    use crate::routes::main::info;
     use crate::sentinel::SentinelManager;
     use crate::setup_utils::setup_logging;
 
@@ -15,14 +19,18 @@ mod tests {
         Config::load(Some(var("ANALYTICS_SERVER_CONFIG_FILE").unwrap())).expect("Failed to load config");
         let config = Config::get().unwrap();
         setup_logging(config).unwrap();
-        let mut sentinel_manager = SentinelManager::new(config.clone());
         block_on(async move {
-            sentinel_manager.setup().await;
-            let cur_client = sentinel_manager.get_master().await.unwrap();
-            info!("Current master address: {:?}", cur_client.get_connection_info().addr.to_string());
-            sleep(Duration::from_secs(3600)).await;
-            let new_client = sentinel_manager.get_master().await.unwrap();
-            info!("Failover master address: {:?}", new_client.get_connection_info().addr.to_string());
+            let sentinel_manager = Arc::new(Mutex::new(SentinelManager::new(config.clone())));
+            sentinel_manager.lock().await.setup().await;
+            let endpoint_manager = Arc::new(Mutex::new(EndpointManager::new(sentinel_manager)));
+            let mut em =  endpoint_manager.lock().await;
+            info!("Test endpoint creation...");
+            info!("{:?}", em.add_endpoint(Endpoint::new("waff", "127.0.0.1:10240".parse::<SocketAddr>().unwrap())).await);
+            info!("Test get endpoints...");
+            info!("{:?}", em.get_endpoints().await);
+            info!("Keys: {:?}", em.get_keys("waff"));
+            info!("Test delete endpoint...");
+            info!("{:?}", em.delete_endpoint("waff".into()).await);
         });
     }
 }

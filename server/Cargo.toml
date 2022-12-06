@@ -47,10 +47,12 @@ thiserror = "1.0.37"
 tokio = { version = "1.21.2", features = ["full"] }
 tokio-test = "0.4.2"
 async-recursion = "1.0.0"
+rsa = "0.7.2"
+rand = "0.8.5"
 
 [dependencies.redis]
 version = "0.22.1"
-features = ["connection-manager", "async-std-comp"]
+features = ["connection-manager", "async-std-comp", "serde_json"]
 
 [dependencies.prisma-client-rust]
 git = "https://github.com/Brendonovich/prisma-client-rust"

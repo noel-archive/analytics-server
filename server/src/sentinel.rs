@@ -7,7 +7,7 @@ use std::string::String;
 use async_recursion::async_recursion;
 
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SentinelManager {
     sentinels: Vec<Client>,
     master_name: Option<String>,
@@ -60,7 +60,7 @@ impl SentinelManager {
     }
 
     fn find_healthy_sentinel(&self) -> RedisResult<Client> {
-        match self.sentinels.clone().iter().find(|&x| x.get_connection().is_ok()) {
+        match self.sentinels.clone().iter().find(|&x| x.get_connection_with_timeout(Duration::from_millis(250)).is_ok()) {
             None => Err(RedisError::from(Error::new(ErrorKind::Other, "no healthy sentinels found"))),
             Some(r) => Ok(r.clone())
         }
@@ -111,7 +111,7 @@ impl SentinelManager {
                     Some(master) => {
                         info!("Master address is {}", master.clone());
                         self.master = Some(Client::open(self.format_url(redis_conf.clone(), master.clone(), false)).unwrap());
-                        let mut conn = self.master.clone().unwrap().get_connection().unwrap();
+                        let mut conn = self.master.clone().unwrap().get_connection_with_timeout(Duration::from_millis(250)).unwrap();
                         let role: RedisResult<Vec<redis::Value>> = redis::cmd("ROLE").query(&mut conn);
                         let actual = String::from_redis_value(&role.unwrap()[0]).unwrap();
                         if actual == "master" {

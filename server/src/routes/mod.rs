@@ -16,3 +16,5 @@
 pub mod api;
 pub mod main;
 pub mod stats;
+pub mod instances;
+pub mod api_result;
