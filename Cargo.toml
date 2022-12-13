@@ -15,4 +15,4 @@
 
 [workspace]
 resolver = "2"
-members = ["protos", "server", "agent", "prisma"]
+members = ["protos", "server", "prisma"]

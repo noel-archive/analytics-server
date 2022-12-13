@@ -5,6 +5,7 @@ use crate::config::{Config, RedisConfig};
 use std::io::{Error, ErrorKind};
 use std::string::String;
 use async_recursion::async_recursion;
+use crate::to_redis_err;
 
 
 #[derive(Clone, Debug)]
@@ -48,7 +49,7 @@ impl SentinelManager {
                     let client = self.find_healthy_sentinel();
                     if client.is_err() { return Err(client.unwrap_err()) }
                     let master_addr = self.get_master_addr(client.unwrap()).await;
-                    if master_addr.is_none() { return Err(RedisError::from(Error::new(ErrorKind::Other, "No new master found!"))) }
+                    if master_addr.is_none() { return Err(to_redis_err!("No new master found!")) }
                     let client = Client::open(self.format_url(redis_conf.clone(), master_addr.unwrap(),false)).unwrap();
                     self.master.replace(client.clone());
                     Ok(client.clone())
@@ -56,12 +57,12 @@ impl SentinelManager {
                 _ => Ok(client.clone())
             }
         }
-        Err(RedisError::from(Error::new(ErrorKind::Other, "No master found!")))
+        Err(to_redis_err!("No master found!"))
     }
 
     fn find_healthy_sentinel(&self) -> RedisResult<Client> {
         match self.sentinels.clone().iter().find(|&x| x.get_connection_with_timeout(Duration::from_millis(250)).is_ok()) {
-            None => Err(RedisError::from(Error::new(ErrorKind::Other, "no healthy sentinels found"))),
+            None => Err(to_redis_err!("no healthy sentinels found")),
             Some(r) => Ok(r.clone())
         }
     }

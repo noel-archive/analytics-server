@@ -18,7 +18,7 @@ use std::net::{IpAddr, Ipv4Addr};
 use std::str::FromStr;
 
 use anyhow::Result;
-use rocket::{Error, Ignite, Rocket, routes};
+use rocket::{catchers, Error, Ignite, Rocket, routes};
 use tokio::sync::Mutex;
 
 use crate::{
@@ -26,8 +26,8 @@ use crate::{
     config::Config,
     prisma::{new_client, PrismaClient},
     setup_utils,
-    routes::main,
-    routes::instances,
+    routes::*,
+    catchers::*
 };
 use crate::endpoints::endpoint_manager::EndpointManager;
 use crate::sentinel::SentinelManager;
@@ -94,7 +94,8 @@ impl Server {
             .manage(sentinel_manager)
             .manage(endpoint_manager)
             .mount("/", routes![main::index, main::heartbeat, main::info])
-            .mount("/instances", routes![instances::instance_init])
+            .mount("/instances", routes![instances::instance_init, instances::instance_finalize])
+            .register("/", catchers![malformed_entity])
             .launch()
             .await
     }

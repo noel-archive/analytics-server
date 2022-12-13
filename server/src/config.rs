@@ -25,6 +25,8 @@ pub static CONFIG: OnceCell<Config> = OnceCell::new();
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
+    // The secret key  to use when requests happen
+    pub secret_key: Option<String>,
     /// The DSN to connect to Sentry for error handling.
     pub sentry_dsn: Option<String>,
 
@@ -198,6 +200,7 @@ impl Config {
     ///
     /// | Name                                 | Environment Variable Key                    | Required? | Type     |
     /// | :----------------------------------- | :------------------------------------------ | :-------- | :------- |
+    /// | `secret_key`                         | ANALYTICS_SECERT_KEY                        | false     | String   |
     /// | `clickhouse.min_connections_in_pool` | ANALYTICS_SERVER_CLICKHOUSE_MIN_CONNECTIONS | false     | u16      |
     /// | `clickhouse.max_connections_in_pool` | ANALYTICS_SERVER_CLICKHOUSE_MAX_CONNECTIONS | false     | u16      |
     /// | `clickhouse.use_lz4_compression`     | ANALYTICS_SERVER_CLICKHOUSE_LZ4_COMPRESSION | false     | bool     |
@@ -216,6 +219,7 @@ impl Config {
     /// | `frontend`                           | ANALYTICS_SERVER_FRONTEND                   | false     | bool     |
     fn from_env() -> Config {
         Config {
+            secret_key: var("ANALYTICS_SECRET_KEY").ok(),
             sentry_dsn: var("ANALYTICS_SERVER_SENTRY_DSN").ok(),
             frontend: var("ANALYTICS_SERVER_FRONTEND").ok().map(|p| {
                 p.parse().expect("Unable to convert environment variable value to bool.")

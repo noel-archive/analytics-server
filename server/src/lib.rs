@@ -42,3 +42,4 @@ pub mod setup_utils;
 pub mod endpoints;
 pub mod sentinel;
 pub mod sentinel_test;
+pub mod catchers;
