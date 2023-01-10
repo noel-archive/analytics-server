@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::io::ErrorKind;
 use std::sync::Arc;
 use anyhow::anyhow;
 use rand::{thread_rng};
@@ -95,23 +94,17 @@ impl EndpointManager {
         self.keys.remove(&instance.into())
     }
 
-    pub async fn store_api_key(&mut self, e: Endpoint, key: String) -> anyhow::Result<bool>  {
+    pub async fn store_api_key(&mut self, e: &mut Endpoint, key: String) -> anyhow::Result<bool>  {
         return match self.redis.lock().await.get_master().await {
             Ok(mut client) =>  {
-                let r = client.hget::<&str, String, Endpoint>("endpoints", e.instance_name);
-                match r {
-                    Ok(mut v) => {
-                        v.api_token = Some(key);
-                        return Ok(match client.hset::<&str, String, Endpoint, i32>("endpoints", v.clone().instance_name, v) {
-                            Ok(i) => i >= 0,
-                            Err(e) => {
-                                warn!("Failed to update endpoint: {}", e);
-                                false
-                            }
-                        })
-                    },
-                    Err(e) => Err(anyhow::Error::from(e))
-                }
+                e.api_token = Some(key);
+                return Ok(match client.hset::<&str, String, Endpoint, i32>("endpoints", e.clone().instance_name, e.clone()) {
+                    Ok(i) => i >= 0,
+                    Err(e) => {
+                        warn!("Failed to update endpoint: {}", e);
+                        false
+                    }
+                })
             }
             Err(e) => Err(anyhow::Error::from(e))
         }

@@ -49,6 +49,8 @@ tokio-test = "0.4.2"
 async-recursion = "1.0.0"
 rsa = "0.7.2"
 rand = "0.8.5"
+base64 = "0.20.0"
+tonic = "0.8.3"
 
 [dependencies.redis]
 version = "0.22.1"

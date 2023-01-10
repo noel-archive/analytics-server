@@ -1,15 +1,13 @@
-use std::borrow::BorrowMut;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use rand::distributions::{Alphanumeric, DistString};
-use rand::thread_rng;
 use tokio::sync::{Mutex};
 use rocket::{post, State};
 use rocket::http::Status;
 use rocket::serde::json::Json;
+use rsa::PaddingScheme;
 use rsa::pkcs8::{LineEnding, EncodePublicKey};
 use serde::{Deserialize, Serialize};
-use uuid::{Error, Uuid, uuid};
+use uuid::{Uuid, uuid};
 use crate::endpoints::endpoint::Endpoint;
 use crate::endpoints::endpoint_manager::EndpointManager;
 use crate::middleware::auth::AuthGuard;
@@ -72,11 +70,25 @@ pub async fn instance_finalize(auth: Result<AuthGuard, ApiError>, id: String, bo
     let mut endpoint_manager = manager.lock().await;
     return match endpoint_manager.get_endpoint(id.clone()).await {
         Err(_) => empty_response(Some(Status::NotFound)),
-        Ok(e) => {
-            info!("Received encoded token: {}", body.api_token);
-            match endpoint_manager.store_api_key(e, body.api_token.clone()).await {
-                Ok(v) => if !v { new_err_resp::<Empty, &str>(500, "Failed to update redis entry!") } else { empty_response(Some(Status::Accepted)) },
-                Err(e) => new_err_resp(500, e.to_string())
+        Ok(mut e) => {
+            let keys = endpoint_manager.get_keys(e.clone().instance_name).unwrap();
+            match base64::decode(body.api_token.clone()) {
+                Err(_) => new_err_resp(400, "Failed to decode base64 encoded token!"),
+                Ok(dec) => {
+                    let decrypt_res = keys.private.decrypt(PaddingScheme::new_pkcs1v15_encrypt(), &dec[..]);
+                    if decrypt_res.is_err() {
+                        return new_err_resp(400, "Failed to decrypt API token, check your signing method!");
+                    }
+                    match endpoint_manager.store_api_key(&mut e, body.api_token.clone()).await {
+                        Ok(v) => if !v { new_err_resp::<Empty, &str>(500, "Failed to update redis entry!") } else {
+                            tokio::spawn(async move {
+                                info!("{:?}", e.is_healthy().await);
+                            });
+                            empty_response(Some(Status::Accepted))
+                        },
+                        Err(e) => new_err_resp(500, e.to_string())
+                    }
+                }
             }
         }
     }
