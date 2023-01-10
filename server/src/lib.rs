@@ -1,5 +1,5 @@
 // 🐻‍❄️🐾 Noelware Analytics: Platform to build upon metrics ingested from any source, from your HTTP server to system-level metrics
-// Copyright 2022 Noelware <team@noelware.org>
+// Copyright 2022-2023 Noelware <team@noelware.org>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,8 +28,10 @@ pub const COMMIT_HASH: &str = env!("ANALYTICS_SERVER_COMMIT_HASH");
 extern crate log;
 extern crate core;
 
+pub mod catchers;
 pub mod clickhouse;
 pub mod config;
+pub mod endpoints;
 pub mod errors;
 pub mod macros;
 pub mod middleware;
@@ -37,9 +39,7 @@ pub mod models;
 pub mod null_writer;
 pub mod prisma;
 pub mod routes;
-pub mod server;
-pub mod setup_utils;
-pub mod endpoints;
 pub mod sentinel;
 pub mod sentinel_test;
-pub mod catchers;
+pub mod server;
+pub mod setup_utils;

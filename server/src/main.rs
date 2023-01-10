@@ -1,5 +1,5 @@
 // 🐻‍❄️🐾 Noelware Analytics: Platform to build upon metrics ingested from any source, from your HTTP server to system-level metrics
-// Copyright 2022 Noelware <team@noelware.org>
+// Copyright 2022-2023 Noelware <team@noelware.org>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,23 +13,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// 1664607600000
-
 #[macro_use]
 extern crate log;
 extern crate core;
 
 use analytics_server::{config::Config, server::Server, setup_utils, COMMIT_HASH, VERSION};
-
-use rocket::Error;
+use anyhow::Result;
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
+async fn main() -> Result<()> {
     // load dotenv just in case people need it
     dotenv::dotenv().unwrap_or_default();
     match std::env::var("ANALYTICS_SERVER_CONFIG_FILE") {
-        Ok(path) => Config::load(Some(path)).unwrap(),
-        Err(_) => panic!("Please define ANALYTICS_SERVER_CONFIG_FILE in your environmental variables!")
+        Ok(path) => Config::load(Some(path))?,
+        Err(_) => {
+            panic!("Please define ANALYTICS_SERVER_CONFIG_FILE in your environmental variables!")
+        }
     }
 
     if std::env::var("DATABASE_URL").is_err() {
@@ -37,13 +36,15 @@ async fn main() -> Result<(), Error> {
     }
 
     // setup logging and sentry
-    let config = Config::get().unwrap();
-    setup_utils::setup_logging(config).unwrap();
-    setup_utils::setup_sentry(config).unwrap();
+    let config = Config::get()?;
+    setup_utils::setup_logging(config)?;
+    setup_utils::setup_sentry(config)?;
 
     info!(
         "~*~ running Noelware Analytics {} ({}) ~*~",
         VERSION, COMMIT_HASH
     );
-    Server::new().await.unwrap().launch().await.and(Ok(()))
+
+    let server = Server::new().await?;
+    server.await.and(Ok(()))
 }

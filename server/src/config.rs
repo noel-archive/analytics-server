@@ -1,5 +1,5 @@
 // 🐻‍❄️🐾 Noelware Analytics: Platform to build upon metrics ingested from any source, from your HTTP server to system-level metrics
-// Copyright 2022 Noelware <team@noelware.org>
+// Copyright 2022-2023 Noelware <team@noelware.org>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ pub struct Config {
     pub server: Option<ServerConfig>,
 
     /// Configuration for redis (REQUIRED).
-    pub redis: RedisConfig
+    pub redis: RedisConfig,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -222,23 +222,28 @@ impl Config {
             secret_key: var("ANALYTICS_SECRET_KEY").ok(),
             sentry_dsn: var("ANALYTICS_SERVER_SENTRY_DSN").ok(),
             frontend: var("ANALYTICS_SERVER_FRONTEND").ok().map(|p| {
-                p.parse().expect("Unable to convert environment variable value to bool.")
+                p.parse()
+                    .expect("Unable to convert environment variable value to bool.")
             }),
             redis: RedisConfig {
-                endpoints: var("ANALYTICS_SERVER_REDIS_URL").and_then(|p: String| {
-                    let mut endpoints = Vec::new();
-                    for endpoint in p.split(',') {
-                        endpoints.push(endpoint.to_string());
-                    }
-                    Ok(endpoints)
-                }).unwrap_or_default(),
+                endpoints: var("ANALYTICS_SERVER_REDIS_URL")
+                    .and_then(|p: String| {
+                        let mut endpoints = Vec::new();
+                        for endpoint in p.split(',') {
+                            endpoints.push(endpoint.to_string());
+                        }
+                        Ok(endpoints)
+                    })
+                    .unwrap_or_default(),
                 tls: var("ANALYTICS_SERVER_REDIS_TLS").ok().map(|p| {
-                    p.parse().expect("Unable to convert environment variable value to bool.")
+                    p.parse()
+                        .expect("Unable to convert environment variable value to bool.")
                 }),
                 master_name: None,
                 password: var("ANALYTICS_SERVER_REDIS_PASSWORD").ok(),
                 db: var("ANALYTICS_SERVER_REDIS_DB").ok().map(|p| {
-                    p.parse().expect("Unable to convert environment variable value to u8.")
+                    p.parse()
+                        .expect("Unable to convert environment variable value to u8.")
                 }),
             },
             clickhouse: Some(ClickHouseConfig {

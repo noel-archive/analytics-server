@@ -1,5 +1,5 @@
 // 🐻‍❄️🐾 Noelware Analytics: Platform to build upon metrics ingested from any source, from your HTTP server to system-level metrics
-// Copyright 2022 Noelware <team@noelware.org>
+// Copyright 2022-2023 Noelware <team@noelware.org>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,22 +13,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{sync::Arc};
 use std::net::{IpAddr, Ipv4Addr};
 use std::str::FromStr;
+use std::sync::Arc;
 
 use anyhow::Result;
-use rocket::{catchers, Error, Ignite, Rocket, routes};
+use rocket::{catchers, routes, Error, Ignite, Rocket};
 use tokio::sync::Mutex;
 
 use crate::{
+    catchers::*,
     clickhouse::client::ClickHouse,
     config::Config,
     prisma::{new_client, PrismaClient},
-    setup_utils,
     routes::*,
-    catchers::*
+    setup_utils,
 };
+
 use crate::endpoints::endpoint_manager::EndpointManager;
 use crate::sentinel::SentinelManager;
 
@@ -92,7 +93,10 @@ impl Server {
             .manage(sentinel_manager)
             .manage(endpoint_manager)
             .mount("/", routes![main::index, main::heartbeat, main::info])
-            .mount("/instances", routes![instances::instance_init, instances::instance_finalize])
+            .mount(
+                "/instances",
+                routes![instances::instance_init, instances::instance_finalize],
+            )
             .register("/", catchers![malformed_entity])
             .launch()
             .await

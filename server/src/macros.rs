@@ -1,5 +1,5 @@
 // 🐻‍❄️🐾 Noelware Analytics: Platform to build upon metrics ingested from any source, from your HTTP server to system-level metrics
-// Copyright 2022 Noelware <team@noelware.org>
+// Copyright 2022-2023 Noelware <team@noelware.org>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 #[macro_export]
 macro_rules! to_redis_err {
     ($s:expr) => {
-        redis::RedisError::from(std::io::Error::new(std::io::ErrorKind::Other, format!("{:?}", $s)))
-    }
+        redis::RedisError::from(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            format!("{:?}", $s),
+        ))
+    };
 }

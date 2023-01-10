@@ -1,5 +1,5 @@
 // 🐻‍❄️🐾 Noelware Analytics: Platform to build upon metrics ingested from any source, from your HTTP server to system-level metrics
-// Copyright 2022 Noelware <team@noelware.org>
+// Copyright 2022-2023 Noelware <team@noelware.org>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,11 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::fmt::Debug;
-use std::io::Cursor;
-use rocket::{Request, Response};
 use rocket::http::{ContentType, Status};
 use rocket::response::Responder;
+use rocket::{Request, Response};
+use std::fmt::Debug;
+use std::io::Cursor;
 
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -25,8 +25,8 @@ use serde_json::json;
 /// Represents a response to an REST request.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ApiResponse<T>
-    where
-        T: Serialize + Debug,
+where
+    T: Serialize + Debug,
 {
     #[serde(skip_serializing)]
     status: Option<u16>,
@@ -61,7 +61,10 @@ pub fn empty_response(status: Option<Status>) -> ApiResponse<Empty> {
     }
 }
 
-impl<T> ApiResponse<T> where T: Serialize + Debug {
+impl<T> ApiResponse<T>
+where
+    T: Serialize + Debug,
+{
     fn is_empty(&self) -> bool {
         !self.success && self.data.is_none() && self.errors.is_none()
     }
@@ -69,8 +72,8 @@ impl<T> ApiResponse<T> where T: Serialize + Debug {
 
 /// Returns a new [`ApiResponse`] struct for a successful REST request.
 pub fn new_response<T>(data: T) -> ApiResponse<T>
-    where
-        T: Serialize + Debug,
+where
+    T: Serialize + Debug,
 {
     ApiResponse {
         status: None,
@@ -81,8 +84,8 @@ pub fn new_response<T>(data: T) -> ApiResponse<T>
 }
 
 pub fn new_response_with_status<T>(status: u16, data: T) -> ApiResponse<T>
-    where
-        T: Serialize + Debug,
+where
+    T: Serialize + Debug,
 {
     ApiResponse {
         status: Some(status),
@@ -94,9 +97,9 @@ pub fn new_response_with_status<T>(status: u16, data: T) -> ApiResponse<T>
 
 /// Returns a new [`ApiResponse`] struct for a failed REST request.
 pub fn new_err_resp<R, S>(code: i32, message: S) -> ApiResponse<R>
-    where
-        R: Serialize + Debug,
-        S: Into<String>,
+where
+    R: Serialize + Debug,
+    S: Into<String>,
 {
     ApiResponse {
         status: None,
@@ -109,7 +112,10 @@ pub fn new_err_resp<R, S>(code: i32, message: S) -> ApiResponse<R>
     }
 }
 
-pub fn new_err_resp_from_err<R>(err: ApiError) -> ApiResponse<R> where R: Serialize + Debug {
+pub fn new_err_resp_from_err<R>(err: ApiError) -> ApiResponse<R>
+where
+    R: Serialize + Debug,
+{
     ApiResponse {
         status: None,
         success: false,
@@ -118,11 +124,18 @@ pub fn new_err_resp_from_err<R>(err: ApiError) -> ApiResponse<R> where R: Serial
     }
 }
 
-impl<'r, S> Responder<'r, 'static> for ApiResponse<S> where S: Serialize + Debug {
+impl<'r, S> Responder<'r, 'static> for ApiResponse<S>
+where
+    S: Serialize + Debug,
+{
     fn respond_to(self, _: &'r Request<'_>) -> rocket::response::Result<'static> {
         if self.is_empty() {
             return Response::build()
-                .status(self.status.map(|x| Status::from_code(x).unwrap_or(Status::NoContent)).unwrap_or(Status::NoContent))
+                .status(
+                    self.status
+                        .map(|x| Status::from_code(x).unwrap_or(Status::NoContent))
+                        .unwrap_or(Status::NoContent),
+                )
                 .ok();
         }
         let serialised = json!(self);
@@ -130,13 +143,20 @@ impl<'r, S> Responder<'r, 'static> for ApiResponse<S> where S: Serialize + Debug
         if let Some(errs) = self.errors {
             return Response::build()
                 .sized_body(str.len(), Cursor::new(str))
-                .status(Status::from_code(errs[0].code.parse::<u16>().unwrap()).unwrap_or(Status::InternalServerError))
+                .status(
+                    Status::from_code(errs[0].code.parse::<u16>().unwrap())
+                        .unwrap_or(Status::InternalServerError),
+                )
                 .header(ContentType::JSON)
                 .ok();
         }
         Response::build()
             .sized_body(str.len(), Cursor::new(str))
-            .status(self.status.map(|x| Status::from_code(x).unwrap_or(Status::Ok)).unwrap_or(Status::Ok))
+            .status(
+                self.status
+                    .map(|x| Status::from_code(x).unwrap_or(Status::Ok))
+                    .unwrap_or(Status::Ok),
+            )
             .header(ContentType::JSON)
             .ok()
     }

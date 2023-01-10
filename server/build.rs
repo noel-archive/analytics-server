@@ -1,5 +1,5 @@
 // 🐻‍❄️🐾 Noelware Analytics: Platform to build upon metrics ingested from any source, from your HTTP server to system-level metrics
-// Copyright 2022 Noelware <team@noelware.org>
+// Copyright 2022-2023 Noelware <team@noelware.org>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,17 +38,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     let commit_hash =
         execute("git", &["rev-parse", "--short=8", "HEAD"]).unwrap_or_else(|_| "noeluwu".into());
 
-    let now = SystemTime::now();
-    let utc: DateTime<Utc> = now.into();
-    let build_date = utc.to_rfc3339();
+    let build_date = {
+        let now = SystemTime::now();
+        let utc: DateTime<Utc> = now.into();
 
-    println!(
-        "cargo:rustc-env=ANALYTICS_SERVER_COMMIT_HASH={}",
-        commit_hash
-    );
+        utc.to_rfc3339()
+    };
 
-    println!("cargo:rustc-env=ANALYTICS_SERVER_BUILD_DATE={}", build_date);
-    println!("cargo:rustc-env=ANALYTICS_SERVER_VERSION={}", version);
+    println!("cargo:rustc-env=ANALYTICS_SERVER_COMMIT_HASH={commit_hash}");
+    println!("cargo:rustc-env=ANALYTICS_SERVER_BUILD_DATE={build_date}");
+    println!("cargo:rustc-env=ANALYTICS_SERVER_VERSION={version}");
 
     Ok(())
 }

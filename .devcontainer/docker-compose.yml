@@ -1,5 +1,5 @@
 # 🐻‍❄️🐾 Noelware Analytics: Platform to build upon metrics ingested from any source, from your HTTP server to system-level metrics
-# Copyright 2022 Noelware <team@noelware.org>
+# Copyright 2022-2023 Noelware <team@noelware.org>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,4 +13,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM rustlang/rust:nightly-alpine3.15 AS builder
+version: "3.8"
+services:
+  workspace:
+    user: noel
+    command: sleep infinity
+    depends_on: [postgres, redis]
+    volumes:
+      - ..:/workspaces/analytics-server:cached
+    build:
+      context: .
+      dockerfile: Dockerfile
+  redis:
+    image: bitnami/redis:7.0.7
+    restart: unless-stopped
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+  postgres:
+    image: bitnami/postgresql:15.1.0
+    restart: unless-stopped
+    environment:
+      - POSTGRESQL_DATABASE=charted
+      - POSTGRESQL_USERNAME=charted
+      - POSTGRESQL_PASSWORD=charted

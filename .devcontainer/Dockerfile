@@ -13,17 +13,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-[package]
-name = "analytics-protobufs"
-description = "🐻‍❄️🐾 Platform to build upon metrics ingested from any source, from your HTTP server to system-level metrics"
-homepage = "https://analytics.noelware.org"
-version = "0.0.0-dev.0"
-edition = "2021"
-
-[dependencies]
-prost = "0.11.2"
-tonic = "0.8.2"
-prost-types = "0.11.2"
-
-[build-dependencies]
-tonic-build = "0.8.2"
+FROM ghcr.io/auguwu/coder-images/rust:latest

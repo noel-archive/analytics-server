@@ -1,5 +1,5 @@
 // 🐻‍❄️🐾 Noelware Analytics: Platform to build upon metrics ingested from any source, from your HTTP server to system-level metrics
-// Copyright 2022 Noelware <team@noelware.org>
+// Copyright 2022-2023 Noelware <team@noelware.org>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,13 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use analytics_protobufs::analytics_client;
 use rocket::get;
 use rocket::serde::json::Json;
 use serde::Serialize;
-use analytics_protobufs::analytics_client;
 
-use crate::{models::response::new_response, BUILD_DATE, COMMIT_HASH, VERSION};
 use crate::models::response::ApiResponse;
+use crate::{models::response::new_response, BUILD_DATE, COMMIT_HASH, VERSION};
 
 #[derive(Debug, Serialize)]
 pub struct MainResponse {
