@@ -13,22 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{net::SocketAddr, sync::Arc};
+use std::{sync::Arc};
+use std::net::{IpAddr, Ipv4Addr};
+use std::str::FromStr;
 
-use actix_web::{
-    self,
-    middleware::Logger,
-    web::{self, Data},
-    App, HttpServer,
-};
 use anyhow::Result;
+use rocket::{catchers, Error, Ignite, Rocket, routes};
+use tokio::sync::Mutex;
 
 use crate::{
     clickhouse::client::ClickHouse,
     config::Config,
     prisma::{new_client, PrismaClient},
-    routes, setup_utils,
+    setup_utils,
+    routes::*,
+    catchers::*
 };
+use crate::endpoints::endpoint_manager::EndpointManager;
+use crate::sentinel::SentinelManager;
 
 #[derive(Debug, Clone)]
 pub struct Server {
@@ -55,50 +57,44 @@ impl Server {
         })
     }
 
-    pub async fn launch(self) -> Result<()> {
+    pub async fn launch(self) -> std::result::Result<Rocket<Ignite>, Error> {
         info!("testing clickhouse availibility...");
         let clickhouse = self.clickhouse.clone();
-        clickhouse.ping().await?;
+        clickhouse.ping().await.expect("Clickhouse is not ready!");
 
         info!("clickhouse seems stable! now launching server...");
         let config = self.config.clone();
         let server_cfg = config.server.unwrap_or_default();
-
         let addr = match &server_cfg.host {
-            Some(host) => {
-                let port = server_cfg.port.unwrap_or(9292);
-                format!("{}:{}", host, port)
-                    .parse::<SocketAddr>()
-                    .expect("unable to parse host:port to SocketAddr")
-            }
-            None => {
-                let port = server_cfg.port.unwrap_or(9292);
-                format!("0.0.0.0:{}", port)
-                    .parse::<SocketAddr>()
-                    .expect("unable to parse host:port to SocketAddr")
-            }
+            Some(host) => IpAddr::from_str(host.as_str()).expect("Invalid host address specified!"),
+            None => IpAddr::from(Ipv4Addr::new(0, 0, 0, 0)),
         };
+        let port: u16 = server_cfg.port.and_then(|x| Some(x as u16)).unwrap_or(9292);
+
+        let sentinel_manager = Arc::new(Mutex::new(SentinelManager::new(self.config.clone())));
+        sentinel_manager.lock().await.setup().await;
+        let endpoint_manager = Arc::new(Mutex::new(EndpointManager::new(sentinel_manager.clone())));
 
         // setup panic handler
         info!("installing panic hook");
         setup_utils::setup_panic_hook();
 
         info!("launching server on {addr}!");
-        HttpServer::new(move || {
-            App::new()
-                .wrap_fn(|request, x| {
-
-                })
-                .app_data(Data::new(self.clone()))
-                .wrap(Logger::new("%r ~> %s [%b bytes; %D ms]").log_target("actix::request"))
-                .route("/", web::get().to(routes::main::index))
-                .route("/info", web::get().to(routes::main::info))
-                .route("/heartbeat", web::get().to(routes::main::heartbeat))
-        })
-        .bind(addr)?
-        .run()
-        .await?;
-
-        Ok(())
+        rocket::build()
+            .configure(rocket::Config {
+                address: addr,
+                port,
+                ..rocket::config::Config::default()
+            })
+            .manage(self.clickhouse.clone())
+            .manage(self.prisma.clone())
+            .manage(self.config.clone())
+            .manage(sentinel_manager)
+            .manage(endpoint_manager)
+            .mount("/", routes![main::index, main::heartbeat, main::info])
+            .mount("/instances", routes![instances::instance_init, instances::instance_finalize])
+            .register("/", catchers![malformed_entity])
+            .launch()
+            .await
     }
 }

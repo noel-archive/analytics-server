@@ -21,9 +21,7 @@ version = "0.0.0-dev.0"
 edition = "2021"
 
 [dependencies]
-actix-utils = "3.0.1"
-actix-web = "4.2.1"
-actix-web-static-files = "4.0.0"
+rocket = { version = "0.5.0-rc.2", features = ["json"] }
 analytics-protobufs = { path = "../protos" }
 ansi_term = "0.12.1"
 anyhow = "1.0.66"
@@ -37,9 +35,9 @@ futures-util = "0.3.25"
 log = "0.4.17"
 once_cell = "1.16.0"
 regex = "1.7.0"
-sentry = "0.28.0"
-sentry-log = "0.28.0"
-sentry-tracing = "0.28.0"
+sentry = "0.29.0"
+sentry-log = "0.29.0"
+sentry-tracing = "0.29.0"
 serde = { version = "1.0.147", features = ["derive"] }
 serde_json = "1.0.86"
 serde_yaml = "0.9.13"
@@ -47,12 +45,30 @@ static-files = "0.2.3"
 sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono"] }
 thiserror = "1.0.37"
 tokio = { version = "1.21.2", features = ["full"] }
+tokio-test = "0.4.2"
+async-recursion = "1.0.0"
+rsa = "0.7.2"
+rand = "0.8.5"
+base64 = "0.20.0"
+tonic = "0.8.3"
+
+[dependencies.redis]
+version = "0.22.1"
+features = ["connection-manager", "async-std-comp", "serde_json"]
 
 [dependencies.prisma-client-rust]
 git = "https://github.com/Brendonovich/prisma-client-rust"
 tag = "0.6.2"
 default-features = false
 features = ["postgresql"]
+
+[dependencies.uuid]
+version = "1.2.2"
+features = [
+    "v4",                # Lets you generate random UUIDs
+    "fast-rng",          # Use a faster (but still sufficiently random) RNG
+    "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
+]
 
 [build-dependencies]
 chrono = "0.4.22"

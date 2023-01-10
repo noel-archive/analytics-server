@@ -26,6 +26,7 @@ pub const COMMIT_HASH: &str = env!("ANALYTICS_SERVER_COMMIT_HASH");
 
 #[macro_use]
 extern crate log;
+extern crate core;
 
 pub mod clickhouse;
 pub mod config;
@@ -38,3 +39,7 @@ pub mod prisma;
 pub mod routes;
 pub mod server;
 pub mod setup_utils;
+pub mod endpoints;
+pub mod sentinel;
+pub mod sentinel_test;
+pub mod catchers;

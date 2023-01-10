@@ -19,17 +19,16 @@
 extern crate log;
 extern crate core;
 
-use std::process::exit;
 use analytics_server::{config::Config, server::Server, setup_utils, COMMIT_HASH, VERSION};
 
-use anyhow::Result;
+use rocket::Error;
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> Result<(), Error> {
     // load dotenv just in case people need it
     dotenv::dotenv().unwrap_or_default();
     match std::env::var("ANALYTICS_SERVER_CONFIG_FILE") {
-        Ok(path) => Config::load(Some(path))?,
+        Ok(path) => Config::load(Some(path)).unwrap(),
         Err(_) => panic!("Please define ANALYTICS_SERVER_CONFIG_FILE in your environmental variables!")
     }
 
@@ -39,17 +38,12 @@ async fn main() -> Result<()> {
 
     // setup logging and sentry
     let config = Config::get().unwrap();
-    setup_utils::setup_logging(config)?;
-    setup_utils::setup_sentry(config)?;
+    setup_utils::setup_logging(config).unwrap();
+    setup_utils::setup_sentry(config).unwrap();
 
     info!(
         "~*~ running Noelware Analytics {} ({}) ~*~",
         VERSION, COMMIT_HASH
     );
-
-    // start server
-    let server = Server::new().await?;
-    server.launch().await?;
-
-    Ok(())
+    Server::new().await.unwrap().launch().await.and(Ok(()))
 }

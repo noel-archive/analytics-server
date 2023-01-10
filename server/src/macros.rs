@@ -14,19 +14,8 @@
 // limitations under the License.
 
 #[macro_export]
-macro_rules! expand_body {
-    ($body:expr, $payload:expr) => {{
-        while let Some(chunk) = $payload.next().await {
-            let chunk = chunk?;
-            if ($body.len() + chunk.len()) > 262_144 {
-                return Err::<::actix_web::HttpResponse, Box<dyn std::error::Error + 'static>>(
-                    Box::new(::actix_web::error::ErrorPayloadTooLarge("heck!")),
-                );
-            }
-
-            $body.extend_from_slice(&chunk);
-        }
-
-        Ok::<(), Box<dyn std::error::Error + 'static>>(())
-    }};
+macro_rules! to_redis_err {
+    ($s:expr) => {
+        redis::RedisError::from(std::io::Error::new(std::io::ErrorKind::Other, format!("{:?}", $s)))
+    }
 }
