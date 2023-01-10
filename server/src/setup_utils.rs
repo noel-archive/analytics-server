@@ -99,8 +99,7 @@ pub fn setup_logging(config: &Config) -> Result<()> {
                 let pid_colour = RGB(169, 147, 227).paint(pid.to_string());
 
                 out.finish(format_args!(
-                "{time} {level} {b1}{target} {c1}{thread_name}{c2} {p1}{pid_colour}{p2}{b2} :: {}",
-                message
+                "{time} {level} {b1}{target} {c1}{thread_name}{c2} {p1}{pid_colour}{p2}{b2} :: {message}"
             ));
             }
         })
@@ -119,7 +118,7 @@ pub fn setup_logging(config: &Config) -> Result<()> {
                 json!({
                     "@timestamp": Local::now().to_rfc3339(),
                     "@version": "1",
-                    "message": format_args!("{}", message),
+                    "message": format_args!("{message}"),
                     "log.level": record.level().as_str(),
                     "thread.name": thread_name,
                     "process.id": pid,
@@ -167,7 +166,7 @@ pub fn setup_panic_hook() {
         } else if let Some(message) = info.payload().downcast_ref::<&str>() {
             (*message).to_string()
         } else {
-            format!("{:?}", info)
+            format!("{info:?}")
         };
 
         let location = match info.location() {

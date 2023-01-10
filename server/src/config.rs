@@ -175,7 +175,7 @@ impl ToString for ClickHouseConfig {
 
         if let Some(max_conn) = self.max_connections_in_pool {
             url.push(prefix);
-            let _ = write!(url, "pool_max={}", max_conn);
+            let _ = write!(url, "pool_max={max_conn}");
 
             if prefix == '?' {
                 prefix = '&';
@@ -184,7 +184,7 @@ impl ToString for ClickHouseConfig {
 
         if let Some(min_conn) = self.min_connections_in_pool {
             url.push(prefix);
-            let _ = write!(url, "pool_min={}", min_conn);
+            let _ = write!(url, "pool_min={min_conn}");
 
             if prefix == '?' {
                 prefix = '&';
@@ -227,12 +227,12 @@ impl Config {
             }),
             redis: RedisConfig {
                 endpoints: var("ANALYTICS_SERVER_REDIS_URL")
-                    .and_then(|p: String| {
+                    .map(|p: String| {
                         let mut endpoints = Vec::new();
                         for endpoint in p.split(',') {
                             endpoints.push(endpoint.to_string());
                         }
-                        Ok(endpoints)
+                        endpoints
                     })
                     .unwrap_or_default(),
                 tls: var("ANALYTICS_SERVER_REDIS_TLS").ok().map(|p| {
@@ -335,8 +335,7 @@ impl Config {
                     // we use the println macro because Config::load() is usually loaded in in main function
                     // before fern is initialized.
                     println!(
-                        "[preinit warn] Unable to load configuration in path due to [{}], using system environment variables as a fallback",
-                        e
+                        "[preinit warn] Unable to load configuration in path due to [{e}], using system environment variables as a fallback"
                     );
 
                     CONFIG.set(Config::from_env()).unwrap();

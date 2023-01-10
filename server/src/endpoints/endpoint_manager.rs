@@ -41,7 +41,7 @@ impl EndpointManager {
     pub async fn get_endpoint(&mut self, name: String) -> anyhow::Result<Endpoint> {
         return match self.redis.lock().await.get_master().await {
             Ok(mut client) => {
-                return match client.hget::<&str, String, Endpoint>("endpoints".into(), name) {
+                return match client.hget::<&str, String, Endpoint>("endpoints", name) {
                     Ok(r) => Ok(r),
                     Err(e) => Err(anyhow::Error::from(e)),
                 }
@@ -69,7 +69,7 @@ impl EndpointManager {
                 let r = client.hset::<&str, String, Endpoint, i32>(
                     "endpoints",
                     endpoint.clone().instance_name,
-                    endpoint.clone().into(),
+                    endpoint.clone(),
                 );
                 return match r {
                     Ok(_) => {
@@ -78,7 +78,7 @@ impl EndpointManager {
                         if r.is_err() {
                             return Err(to_redis_err!(format!(
                                 "Failed to create rsa private key: {}",
-                                r.unwrap_err().to_string()
+                                r.unwrap_err()
                             )));
                         }
                         let private_key = private.unwrap();

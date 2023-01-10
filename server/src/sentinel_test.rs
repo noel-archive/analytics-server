@@ -18,7 +18,6 @@ mod tests {
     use crate::config::Config;
     use crate::endpoints::endpoint::Endpoint;
     use crate::endpoints::endpoint_manager::EndpointManager;
-    use crate::routes::main::info;
     use crate::sentinel::SentinelManager;
     use crate::setup_utils::setup_logging;
     use dotenv::var;

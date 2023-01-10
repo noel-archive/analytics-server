@@ -70,7 +70,7 @@ impl Server {
             Some(host) => IpAddr::from_str(host.as_str()).expect("Invalid host address specified!"),
             None => IpAddr::from(Ipv4Addr::new(0, 0, 0, 0)),
         };
-        let port: u16 = server_cfg.port.and_then(|x| Some(x as u16)).unwrap_or(9292);
+        let port: u16 = server_cfg.port.map(|x| x as u16).unwrap_or(9292);
 
         let sentinel_manager = Arc::new(Mutex::new(SentinelManager::new(self.config.clone())));
         sentinel_manager.lock().await.setup().await;

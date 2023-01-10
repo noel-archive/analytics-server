@@ -13,21 +13,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::net::SocketAddr;
-use std::sync::Arc;
-use tokio::sync::{Mutex};
-use rocket::{post, State};
-use rocket::http::Status;
-use rocket::serde::json::Json;
-use rsa::PaddingScheme;
-use rsa::pkcs8::{LineEnding, EncodePublicKey};
-use serde::{Deserialize, Serialize};
-use uuid::{Uuid, uuid};
 use crate::endpoints::endpoint::Endpoint;
 use crate::endpoints::endpoint_manager::EndpointManager;
 use crate::middleware::auth::AuthGuard;
-use crate::models::response::{ApiError, ApiResponse, Empty, empty_response, new_err_resp, new_err_resp_from_err, new_response};
-use crate::routes::main::info;
+use crate::models::response::{
+    empty_response, new_err_resp, new_err_resp_from_err, new_response, ApiError, ApiResponse, Empty,
+};
+use rocket::http::Status;
+use rocket::serde::json::Json;
+use rocket::{post, State};
+use rsa::pkcs8::{EncodePublicKey, LineEnding};
+use rsa::PaddingScheme;
+use serde::{Deserialize, Serialize};
+use std::net::SocketAddr;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use uuid::Uuid;
 
 #[derive(Deserialize)]
 pub struct InstanceInitRequest {
@@ -37,7 +38,7 @@ pub struct InstanceInitRequest {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct InstanceInitResponse {
     pub pub_key: String,
-    pub uuid: String
+    pub uuid: String,
 }
 
 #[derive(Deserialize)]
@@ -46,13 +47,25 @@ pub struct InstanceFinalizeRequest {
 }
 
 #[post("/<id>/init", format = "json", data = "<body>")]
-pub async fn instance_init(auth: Result<AuthGuard, ApiError>, id: String, body: Json<InstanceInitRequest>, manager: &State<Arc<Mutex<EndpointManager>>>) -> ApiResponse<InstanceInitResponse> {
+pub async fn instance_init(
+    auth: Result<AuthGuard, ApiError>,
+    id: String,
+    body: Json<InstanceInitRequest>,
+    manager: &State<Arc<Mutex<EndpointManager>>>,
+) -> ApiResponse<InstanceInitResponse> {
     return match Uuid::parse_str(id.as_str()) {
         Ok(id) => {
-            if let Err(e) = auth { return new_err_resp_from_err(e) }
+            if let Err(e) = auth {
+                return new_err_resp_from_err(e);
+            }
             let mut endpoint_manager = manager.lock().await;
             let parsed = body.addr.parse::<SocketAddr>();
-            if parsed.is_err() { return new_err_resp::<_, String>(400, "Invalid address specified, must be ip:port".into()) }
+            if parsed.is_err() {
+                return new_err_resp::<_, String>(
+                    400,
+                    "Invalid address specified, must be ip:port".into(),
+                );
+            }
             let existing = endpoint_manager.get_endpoint(id.to_string()).await;
             if let Ok(e) = existing {
                 endpoint_manager.drop_key(e.instance_name);
@@ -68,20 +81,30 @@ pub async fn instance_init(auth: Result<AuthGuard, ApiError>, id: String, body: 
                         }),
                         Err(e) => {
                             warn!("Failed to generate public key: {}", e);
-                            new_err_resp::<InstanceInitResponse, String>(500, "Failed to encode public key!".into())
+                            new_err_resp::<InstanceInitResponse, String>(
+                                500,
+                                "Failed to encode public key!".into(),
+                            )
                         }
-                    }
+                    };
                 }
-                Err(e) => new_err_resp::<_, String>(500, e.to_string())
-            }
-        },
-        Err(_) => new_err_resp(400, "Bad Uuid")
+                Err(e) => new_err_resp::<_, String>(500, e.to_string()),
+            };
+        }
+        Err(_) => new_err_resp(400, "Bad Uuid"),
     };
 }
 
 #[post("/<id>/finalize", format = "json", data = "<body>")]
-pub async fn instance_finalize(auth: Result<AuthGuard, ApiError>, id: String, body: Json<InstanceFinalizeRequest>, manager: &State<Arc<Mutex<EndpointManager>>>) -> ApiResponse<Empty> {
-    if let Err(e) = auth { return new_err_resp_from_err(e) }
+pub async fn instance_finalize(
+    auth: Result<AuthGuard, ApiError>,
+    id: String,
+    body: Json<InstanceFinalizeRequest>,
+    manager: &State<Arc<Mutex<EndpointManager>>>,
+) -> ApiResponse<Empty> {
+    if let Err(e) = auth {
+        return new_err_resp_from_err(e);
+    }
     let mut endpoint_manager = manager.lock().await;
     return match endpoint_manager.get_endpoint(id.clone()).await {
         Err(_) => empty_response(Some(Status::NotFound)),
@@ -90,21 +113,33 @@ pub async fn instance_finalize(auth: Result<AuthGuard, ApiError>, id: String, bo
             match base64::decode(body.api_token.clone()) {
                 Err(_) => new_err_resp(400, "Failed to decode base64 encoded token!"),
                 Ok(dec) => {
-                    let decrypt_res = keys.private.decrypt(PaddingScheme::new_pkcs1v15_encrypt(), &dec[..]);
+                    let decrypt_res = keys
+                        .private
+                        .decrypt(PaddingScheme::new_pkcs1v15_encrypt(), &dec[..]);
                     if decrypt_res.is_err() {
-                        return new_err_resp(400, "Failed to decrypt API token, check your signing method!");
+                        return new_err_resp(
+                            400,
+                            "Failed to decrypt API token, check your signing method!",
+                        );
                     }
-                    match endpoint_manager.store_api_key(&mut e, body.api_token.clone()).await {
-                        Ok(v) => if !v { new_err_resp::<Empty, &str>(500, "Failed to update redis entry!") } else {
-                            tokio::spawn(async move {
-                                info!("{:?}", e.is_healthy().await);
-                            });
-                            empty_response(Some(Status::Accepted))
-                        },
-                        Err(e) => new_err_resp(500, e.to_string())
+                    match endpoint_manager
+                        .store_api_key(&mut e, body.api_token.clone())
+                        .await
+                    {
+                        Ok(v) => {
+                            if !v {
+                                new_err_resp::<Empty, &str>(500, "Failed to update redis entry!")
+                            } else {
+                                tokio::spawn(async move {
+                                    info!("{:?}", e.is_healthy().await);
+                                });
+                                empty_response(Some(Status::Accepted))
+                            }
+                        }
+                        Err(e) => new_err_resp(500, e.to_string()),
                     }
                 }
             }
         }
-    }
+    };
 }

@@ -16,8 +16,7 @@
 use crate::config::{Config, RedisConfig};
 use crate::to_redis_err;
 use async_recursion::async_recursion;
-use redis::{Client, FromRedisValue, RedisError, RedisResult};
-use std::io::{Error, ErrorKind};
+use redis::{Client, FromRedisValue, RedisResult};
 use std::string::String;
 use std::time::Duration;
 use tokio::time::sleep;
@@ -33,9 +32,9 @@ pub struct SentinelManager {
 #[async_recursion]
 async fn try_unreachable_sentinel(addr: String) {
     let client = Client::open(addr.clone()).unwrap();
-    if !client
+    if client
         .get_connection_with_timeout(Duration::from_millis(250))
-        .is_ok()
+        .is_err()
     {
         debug!("Sentinel {} is still unreachable!", addr);
         sleep(Duration::from_secs(5)).await;
@@ -77,7 +76,7 @@ impl SentinelManager {
                     ))
                     .unwrap();
                     self.master.replace(client.clone());
-                    Ok(client.clone())
+                    Ok(client)
                 }
                 _ => Ok(client.clone()),
             };
@@ -103,7 +102,7 @@ impl SentinelManager {
                 false => "redis",
             },
             match config.password {
-                Some(password) => format!(":{}", password),
+                Some(password) => format!(":{password}"),
                 None => "".to_string(),
             },
             addr,
@@ -122,9 +121,9 @@ impl SentinelManager {
             let sentinel_url = self.format_url(redis_conf.clone(), addr.clone(), true);
             let client = Client::open(sentinel_url.clone()).unwrap();
             let mut i = 0;
-            while !client
+            while client
                 .get_connection_with_timeout(Duration::from_millis(250))
-                .is_ok()
+                .is_err()
             {
                 if i >= 5 {
                     error!("Giving up on connecting to sentinel at {}!", addr);
@@ -145,12 +144,12 @@ impl SentinelManager {
                 .query_async::<_, String>(&mut conn)
                 .await
                 .unwrap();
-            let redis_info_split = redis_info.split("\n").collect::<Vec<&str>>();
+            let redis_info_split = redis_info.split('\n').collect::<Vec<&str>>();
             let redis_mode = redis_info_split
                 .iter()
                 .find(|x| x.contains("redis_mode"))
                 .unwrap()
-                .split(":")
+                .split(':')
                 .collect::<Vec<&str>>()[1]
                 .trim();
             if redis_mode != "sentinel" {

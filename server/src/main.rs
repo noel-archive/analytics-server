@@ -21,7 +21,8 @@ use analytics_server::{config::Config, server::Server, setup_utils, COMMIT_HASH,
 use anyhow::Result;
 
 #[tokio::main]
-async fn main() -> Result<()> {
+#[allow(unused_must_use)]
+async fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
     // load dotenv just in case people need it
     dotenv::dotenv().unwrap_or_default();
     match std::env::var("ANALYTICS_SERVER_CONFIG_FILE") {
@@ -36,7 +37,7 @@ async fn main() -> Result<()> {
     }
 
     // setup logging and sentry
-    let config = Config::get()?;
+    let config = Config::get().unwrap();
     setup_utils::setup_logging(config)?;
     setup_utils::setup_sentry(config)?;
 
@@ -46,5 +47,7 @@ async fn main() -> Result<()> {
     );
 
     let server = Server::new().await?;
-    server.await.and(Ok(()))
+    server.launch().await?;
+
+    Ok(())
 }

@@ -13,11 +13,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::models::response::ApiError;
-use rocket::data::Outcome;
-use rocket::http::Status;
-use rocket::request::FromRequest;
-use rocket::Request;
-use uuid::Uuid;
-
 pub struct UuidParse;

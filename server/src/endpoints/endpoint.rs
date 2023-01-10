@@ -16,13 +16,12 @@
 use crate::to_redis_err;
 use analytics_protobufs::analytics_client::AnalyticsClient;
 use analytics_protobufs::{ConnectionAckRequest, ConnectionAckResponse};
-use anyhow::anyhow;
+use anyhow::{anyhow, Result};
 use redis::Value::Nil;
 use redis::{FromRedisValue, RedisResult, RedisWrite, ToRedisArgs, Value};
 use rsa::{PaddingScheme, RsaPrivateKey, RsaPublicKey};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::io::{Error, ErrorKind};
 use std::net::SocketAddr;
 use tonic::codegen::InterceptedService;
 use tonic::service::Interceptor;
@@ -64,7 +63,7 @@ impl FromRedisValue for Endpoint {
     }
 }
 
-struct EndpointAuth {
+pub struct EndpointAuth {
     pub(crate) token: String,
 }
 
@@ -89,13 +88,12 @@ impl Endpoint {
 
     pub async fn get_grpc_client(
         &self,
-    ) -> Result<AnalyticsClient<InterceptedService<Channel, EndpointAuth>>, tonic::transport::Error>
-    {
+    ) -> Result<AnalyticsClient<InterceptedService<Channel, EndpointAuth>>> {
         let mut token: Option<String> = None;
         if let Some(keys) = &self.keys {
             match keys.private.decrypt(
                 PaddingScheme::new_pkcs1v15_encrypt(),
-                &self.api_token.clone().unwrap().as_bytes(),
+                self.api_token.clone().unwrap().as_bytes(),
             ) {
                 Ok(dec) => token = Some(String::from_utf8(dec).unwrap()),
                 Err(_e) => {}
@@ -103,13 +101,10 @@ impl Endpoint {
         }
 
         if token.is_none() {
-            return Err(tonic::transport::Error::from(Error::new(
-                ErrorKind::Other,
-                "borkism",
-            )));
+            return Err(anyhow!("Unable to determine service token"));
         }
 
-        let channel = Channel::from_shared(format!("grpc://{}", self.addr.to_string()))
+        let channel = Channel::from_shared(format!("grpc://{}", self.addr))
             .unwrap()
             .connect()
             .await?;
@@ -122,7 +117,7 @@ impl Endpoint {
         ))
     }
 
-    pub async fn is_healthy(&self) -> anyhow::Result<ConnectionAckResponse> {
+    pub async fn is_healthy(&self) -> Result<ConnectionAckResponse> {
         let client = self.get_grpc_client().await;
         return match client {
             Ok(mut c) => {

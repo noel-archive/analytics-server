@@ -36,7 +36,7 @@ impl<'r> FromRequest<'r> for AuthGuard {
                 },
             )),
             Some(v)
-                if config.secret_key.is_some() && config.secret_key.unwrap() == v.to_string() =>
+                if config.secret_key.is_some() && config.secret_key.unwrap() == *v =>
             {
                 Outcome::Success(AuthGuard {})
             }
