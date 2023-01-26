@@ -51,7 +51,7 @@ tokio-test = "0.4.2"
 tonic = "0.8.3"
 
 [dependencies.redis]
-version = "0.22.1"
+version = "0.22.3"
 features = ["connection-manager", "async-std-comp", "serde_json"]
 
 [dependencies.prisma-client-rust]
