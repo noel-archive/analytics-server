@@ -26,7 +26,7 @@ ansi_term = "0.12.1"
 anyhow = "1.0.68"
 async-recursion = "1.0.2"
 async-trait = "0.1.63"
-base64 = "0.20.0"
+base64 = "0.21.0"
 chrono = { version = "0.4.23", features = ["serde"] }
 clickhouse-rs = "1.0.0-alpha.1"
 dotenv = "0.15.0"
