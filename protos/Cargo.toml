@@ -23,7 +23,7 @@ edition = "2021"
 [dependencies]
 prost = "0.11.8"
 tonic = "0.8.3"
-prost-types = "0.11.7"
+prost-types = "0.11.8"
 
 [build-dependencies]
 tonic-build = "0.8.4"
