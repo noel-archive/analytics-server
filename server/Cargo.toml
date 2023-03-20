@@ -24,7 +24,7 @@ edition = "2021"
 analytics-protobufs = { path = "../protos" }
 ansi_term = "0.12.1"
 anyhow = "1.0.70"
-async-recursion = "1.0.2"
+async-recursion = "1.0.4"
 async-trait = "0.1.67"
 base64 = "0.21.0"
 chrono = { version = "0.4.24", features = ["serde"] }
