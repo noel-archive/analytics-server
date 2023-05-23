@@ -39,7 +39,7 @@ rand = "0.8.5"
 regex = "1.8.1"
 rocket = { version = "0.5.0-rc.3", features = ["json"] }
 rsa = "0.7.2"
-sentry = "0.31.1"
+sentry = "0.31.2"
 sentry-log = "0.31.1"
 sentry-tracing = "0.31.1"
 serde = { version = "1.0.163", features = ["derive"] }
